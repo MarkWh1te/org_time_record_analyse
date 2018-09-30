@@ -142,34 +142,28 @@ def get_report(df: pd.DataFrame) -> str:
     return html
 
 
-def get_week_report():
+def get_week_report() -> html:
     """
-    TODO:fix me
+    get this week html report
     """
-    pass
-
-
-def main():
-    record_df = get_record_df()
     # get today's datetime
     now = datetime.now()
     # get this week record
     this_week = get_this_week(record_df, now)
-    print(this_week.shape, 'this week shape')
     today = get_this_day(record_df, now)
-    print(today, 'today shape')
-
     this_week_sleep_time = get_name_time_in_df(this_week, "sleep")
-    print(this_week_sleep_time)
     this_week_work_time = get_tag_time_in_df(this_week, 'WORK')
-    print(this_week_work_time)
-    this_week_tags_time = get_tags_in_df(this_week)
-    print(this_week_tags_time)
     result = pd.concat([this_week_work_time, this_week_sleep_time],
                        axis=1,
                        sort=True)
+    report = get_report(result)
+    return report
 
-    return this_week_sleep_time
+
+def main():
+    record_df = get_record_df()
+    # this_week_tags_time = get_tags_in_df(this_week)
+    return record_df
 
 
 if __name__ == '__main__':
