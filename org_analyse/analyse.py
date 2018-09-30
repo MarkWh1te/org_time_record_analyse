@@ -86,7 +86,7 @@ def org_df2record_df(org_df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def get_this_week(df: pd.DataFrame, now: DateTime):
+def get_this_week(df: pd.DataFrame, now: datetime):
     """
     get dataframe start_time >= one week ago and end_time <= now
     """
@@ -96,7 +96,7 @@ def get_this_week(df: pd.DataFrame, now: DateTime):
     return df
 
 
-def get_this_day(df: pd.DataFrame, now: DateTime) -> pd.DataFrame:
+def get_this_day(df: pd.DataFrame, now: datetime) -> pd.DataFrame:
     """
     get dataframe start_time >= one week ago and end_time <= now
     """
@@ -107,8 +107,46 @@ def get_this_day(df: pd.DataFrame, now: DateTime) -> pd.DataFrame:
 
 
 def get_name_time_in_df(df: pd.DataFrame, name: str) -> pd.Series:
-    return df[df['name'].apply(lambda x: name in x)]['name'].resample(
+    """
+    get item name time records number from dataframe
+    """
+    result = df[df['name'].apply(lambda x: name in x)]['name'].resample(
         'D').count() / 60
+    # result.index = result.index.weekday_name
+    return result.to_frame()
+
+
+def get_tag_time_in_df(df: pd.DataFrame, tag: str) -> pd.DataFrame:
+    """
+    get item tag time records number from dataframe
+    """
+    result = df[df['tag'].apply(lambda x: tag in x)]['name'].resample(
+        'D').count() / 60
+    # result.index = result.index.weekday_name
+    return result.to_frame()
+
+
+def get_tags_in_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    get item tag time records number from dataframe
+    """
+    return df.groupby('tag').count() / 60
+
+
+def get_report(df: pd.DataFrame) -> str:
+    """
+    get html report from data frame
+    """
+    df.index = df.index.weekday_name
+    html = df.to_html()
+    return html
+
+
+def get_week_report():
+    """
+    TODO:fix me
+    """
+    pass
 
 
 def main():
@@ -117,9 +155,21 @@ def main():
     now = datetime.now()
     # get this week record
     this_week = get_this_week(record_df, now)
+    print(this_week.shape, 'this week shape')
     today = get_this_day(record_df, now)
-    print(this_week)
-    return record_df
+    print(today, 'today shape')
+
+    this_week_sleep_time = get_name_time_in_df(this_week, "sleep")
+    print(this_week_sleep_time)
+    this_week_work_time = get_tag_time_in_df(this_week, 'WORK')
+    print(this_week_work_time)
+    this_week_tags_time = get_tags_in_df(this_week)
+    print(this_week_tags_time)
+    result = pd.concat([this_week_work_time, this_week_sleep_time],
+                       axis=1,
+                       sort=True)
+
+    return this_week_sleep_time
 
 
 if __name__ == '__main__':
