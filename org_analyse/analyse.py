@@ -52,6 +52,20 @@ def get_org_df():
     org_df = org_path2df(org_path)
     return org_df
 
+def org_df2record_df(org_df):
+    """
+    convert org dataframe to record df per minute
+    """
+    result = pd.Dataframe()
+    index_list = list(org_df.index)
+    for index in index_list:
+        record = org_df.iloc[index]
+        range_index = pd.date_range(start=record.start_time,end=record.end_time,freq='T')
+        tmp= pd.DataFrame([{'name':record.name,'tag':record.tag} for i in range(len(range_time))],index=range_time)
+    return result
+
+
+
 def get_this_week(df,now):
     """
     get dataframe start_time >= one week ago and end_time <= now
@@ -59,6 +73,7 @@ def get_this_week(df,now):
     one_week_ago = now - timedelta(weeks=1)
     now = now.replace(hour=23,minute=59,second=0)
     one_week_ago = one_week_ago.replace(hour=0,minute=0,second=0)
+    print(one_week_ago,now)
     df = df[(df.start_time>=one_week_ago)&(df.end_time<=now)]
     return df
 
@@ -68,6 +83,7 @@ def main():
     now  = datetime.now()
     this_week = get_this_week(df,now)
     print(this_week)
+    return this_week
 
 if __name__ == '__main__':
     main()
