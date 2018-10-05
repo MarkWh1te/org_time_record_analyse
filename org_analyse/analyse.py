@@ -167,11 +167,14 @@ def get_week_report() -> str:
     this_week_work_time = get_tag_time_in_df(this_week, 'WORK')
     this_week_unkown_time = get_tag_time_in_df(this_week, 'UNKOWN')
 
-    result = pd.concat(
-        [this_week_work_time, this_week_sleep_time, this_week_unkown_time],
-        axis=1,
-        sort=True)
+    result = pd.concat([
+        this_week_study_time, this_week_work_time, this_week_sleep_time,
+        this_week_unkown_time
+    ],
+                       axis=1,
+                       sort=True)
     result.columns = ["studying", "work", "sleep", "unkown"]
+    result.fillna(0, inplace=True)
     report = get_report(result)
     return report
 
