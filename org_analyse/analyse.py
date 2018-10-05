@@ -1,9 +1,25 @@
-"""This file contains org parser and analyser
+"""This file contains org related stuff
 """
 import json
 from datetime import datetime, timedelta
 import pandas as pd
 from orgparse import load
+
+
+def get_week_start_end(date: datetime) -> (datetime, datetime):
+    """
+    get week start and end time
+    """
+    start = date - timedelta(days=date.weekday())
+    end = date + timedelta(days=(6 - date.weekday()))
+    return start, end
+
+
+def minutes2hours(minutes, decimal=2) -> float:
+    """
+    convert minutes to hours default with 2 digits
+    """
+    return round(minutes / 60, decimal)
 
 
 def item2dict(item):
@@ -86,13 +102,14 @@ def org_df2record_df(org_df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def get_this_week(df: pd.DataFrame, now: datetime):
+def get_this_week(df: pd.DataFrame, now: datetime) -> pd.DataFrame:
     """
     get dataframe start_time >= one week ago and end_time <= now
     """
     now = now.replace(hour=23, minute=59, second=59)
-    one_week_ago = now - timedelta(weeks=1)
-    df = df[(df.index <= now) & (df.index >= one_week_ago)]
+    start, end = get_week_start_end(now)
+    start = start.replace(hour=0, minute=0, second=0)
+    df = df[(df.index <= end) & (df.index >= start)]
     return df
 
 
@@ -108,29 +125,20 @@ def get_this_day(df: pd.DataFrame, now: datetime) -> pd.DataFrame:
 
 def get_name_time_in_df(df: pd.DataFrame, name: str) -> pd.Series:
     """
-    get item name time records number from dataframe
+    get item with this name totall time number from source data
     """
     result = df[df['name'].apply(lambda x: name in x)]['name'].resample(
-        'D').count() / 60
-    # result.index = result.index.weekday_name
+        'D').count().apply(minutes2hours)
     return result.to_frame()
 
 
 def get_tag_time_in_df(df: pd.DataFrame, tag: str) -> pd.DataFrame:
     """
-    get item tag time records number from dataframe
+    get item with this tag totall time number from source data
     """
     result = df[df['tag'].apply(lambda x: tag in x)]['name'].resample(
-        'D').count() / 60
-    # result.index = result.index.weekday_name
+        'D').count().apply(minutes2hours)
     return result.to_frame()
-
-
-def get_tags_in_df(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    get item tag time records number from dataframe
-    """
-    return df.groupby('tag').count() / 60
 
 
 def get_report(df: pd.DataFrame) -> str:
@@ -142,28 +150,37 @@ def get_report(df: pd.DataFrame) -> str:
     return html
 
 
-def get_week_report() -> html:
+def get_week_report() -> str:
     """
     get this week html report
     """
+    # get basic dataframe
+    record_df = get_record_df()
     # get today's datetime
     now = datetime.now()
     # get this week record
     this_week = get_this_week(record_df, now)
     today = get_this_day(record_df, now)
+
+    this_week_study_time = get_tag_time_in_df(this_week, 'STUDYING')
     this_week_sleep_time = get_name_time_in_df(this_week, "sleep")
     this_week_work_time = get_tag_time_in_df(this_week, 'WORK')
-    result = pd.concat([this_week_work_time, this_week_sleep_time],
-                       axis=1,
-                       sort=True)
+    this_week_unkown_time = get_tag_time_in_df(this_week, 'UNKOWN')
+
+    result = pd.concat(
+        [this_week_work_time, this_week_sleep_time, this_week_unkown_time],
+        axis=1,
+        sort=True)
+    result.columns = ["studying", "work", "sleep", "unkown"]
     report = get_report(result)
     return report
 
 
-def main():
-    record_df = get_record_df()
-    # this_week_tags_time = get_tags_in_df(this_week)
-    return record_df
+def main() -> None:
+    # record_df = get_record_df()
+    this_week = get_week_report()
+    print(this_week)
+    # return record_df
 
 
 if __name__ == '__main__':
